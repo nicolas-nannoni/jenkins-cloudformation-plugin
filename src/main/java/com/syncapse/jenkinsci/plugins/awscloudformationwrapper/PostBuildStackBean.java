@@ -17,216 +17,244 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 /**
- * 
- * 
+ *
+ *
  * @author erickdovale
  *
  */
 public class PostBuildStackBean extends AbstractDescribableImpl<PostBuildStackBean> {
-	
-	/**
-	 * The name of the stack.
-	 */
-	private String stackName;
-	
-	/**
-	 * The description of the cloud formation stack that will be launched.
-	 */
-	private String description;
-	
-	/**
-	 * The json file with the Cloud Formation definition.
-	 */
-	private String cloudFormationRecipe;
-	
-	/**
-	 * The parameters to be passed into the cloud formation.
-	 */
-	private String parameters;
-	
-	/**
-	 * Time to wait for a stack to be created before giving up and failing the build. 
-	 */
-	private long timeout;
-	
-	/**
-	 * The access key to call Amazon's APIs
-	 */
-	private String awsAccessKey;
-	
-	/**
-	 * The secret key to call Amazon's APIs
-	 */
-	private String awsSecretKey;
 
-        
-        private long sleep;
+    /**
+     * The name of the stack.
+     */
+    private final String stackName;
 
-    
-    private Region awsRegion;
-	
-	@DataBoundConstructor
-	public PostBuildStackBean(String stackName, String description,
-			String cloudFormationRecipe, String parameters, long timeout,
-			String awsAccessKey, String awsSecretKey, Region awsRegion,long sleep) {
-		super();
-		this.stackName = stackName;
-		this.description = description;
-		this.cloudFormationRecipe = cloudFormationRecipe;
-		this.parameters = parameters;
-		this.timeout = timeout;
-		this.awsAccessKey = awsAccessKey;
-		this.awsSecretKey = awsSecretKey;
-                this.sleep=sleep;
+    /**
+     * The string to prepend to the outputs of the stack being created.
+     */
+    private final String outputPrefixName;
+
+    /**
+     * The description of the cloud formation stack that will be launched.
+     */
+    private final String description;
+
+    /**
+     * The json file with the Cloud Formation definition.
+     */
+    private final String cloudFormationRecipe;
+
+    /**
+     * The parameters to be passed into the cloud formation.
+     */
+    private final String parameters;
+
+    /**
+     * Time to wait for a stack to be created before giving up and failing the build.
+     */
+    private final long timeout;
+
+    /**
+     * The access key to call Amazon's APIs
+     */
+    private final String awsAccessKey;
+
+    /**
+     * The secret key to call Amazon's APIs
+     */
+    private final String awsSecretKey;
+
+    private final long sleep;
+
+    private final String awsRegion;
+
+    @DataBoundConstructor
+    public PostBuildStackBean(final String stackName, final String outputPrefixName, final String description, final String cloudFormationRecipe,
+            final String parameters, final long timeout, final String awsAccessKey, final String awsSecretKey, final String awsRegion, final long sleep) {
+
+        super();
+        this.stackName = stackName;
+        this.outputPrefixName = outputPrefixName;
+        this.description = description;
+        this.cloudFormationRecipe = cloudFormationRecipe;
+        this.parameters = parameters;
+        this.timeout = timeout;
+        this.awsAccessKey = awsAccessKey;
+        this.awsSecretKey = awsSecretKey;
+        this.sleep = sleep;
         this.awsRegion = awsRegion;
-	}
-
-	public String getStackName() {
-		return stackName;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public String getCloudFormationRecipe() {
-		return cloudFormationRecipe;
-	}
-
-	public String getParameters() {
-		return parameters;
-	}
-
-	public long getTimeout() {
-		return timeout;
-	}
-
-	public String getAwsAccessKey() {
-		return awsAccessKey;
-	}
-
-	public String getAwsSecretKey() {
-		return awsSecretKey;
-	}
-        public long getSleep() {
-		return sleep;
-	}
-
-    
-    public Region getAwsRegion(){
-    	return awsRegion;
     }
 
-	public Map<String, String> getParsedParameters(EnvVars env) {
-		
-		if (parameters == null || parameters.isEmpty())
-			return new HashMap<String, String>();
-		
-		Map<String, String> result = new HashMap<String, String>();
-		String token[] = null;
-		
-		//semicolon delimited list
-		if(parameters.contains(";")) {
-			for (String param : parameters.split(";")) {
-				token = param.split("=");
-				result.put(token[0].trim(), env.expand(token[1].trim()));
-			}
-		} else {
-			//comma delimited parameter list
-			for (String param : parameters.split(",")) {
-				token = param.split("=");
-				result.put(token[0].trim(), env.expand(token[1].trim()));
-			}
-		}
-		return result;
-	}
-	
-	public String getParsedAwsAccessKey(EnvVars env) {
-		return env.expand(getAwsAccessKey());
-	}
+    public String getStackName() {
 
-	
-	public String getParsedAwsSecretKey(EnvVars env) {
-		return env.expand(getAwsSecretKey());
-	}
+        return stackName;
+    }
 
-	@Extension
-	public static final class DescriptorImpl extends Descriptor<PostBuildStackBean>{
-		
-		@Override
-		public String getDisplayName() {
-			return "Cloud Formation";
-		}
-		
-        public FormValidation doCheckStackName(
-				@AncestorInPath AbstractProject<?, ?> project,
-				@QueryParameter String value) throws IOException {
-			if (0 == value.length()) {
-				return FormValidation.error("Empty stack name");
-			}
-			return FormValidation.ok();
-		}
+    public String getOutputPrefixName() {
 
-		public FormValidation doCheckTimeout(
-				@AncestorInPath AbstractProject<?, ?> project,
-				@QueryParameter String value) throws IOException {
-			if (value.length() > 0) {
-				try {
-					Long.parseLong(value);
-				} catch (NumberFormatException e) {
-					return FormValidation.error("Timeout value "+ value + " is not a number.");
-				}
-			}
-			return FormValidation.ok();
-		}
-	public FormValidation doCheckSleep(
-				@AncestorInPath AbstractProject<?, ?> project,
-				@QueryParameter String value) throws IOException {
-			if (value.length() > 0) {
-				try {
-					Long.parseLong(value);
-				} catch (NumberFormatException e) {
-					return FormValidation.error("Timeout value "+ value + " is not a number.");
-				}
-			}
-			return FormValidation.ok();
-		}
-		public FormValidation doCheckCloudFormationRecipe(
-				@AncestorInPath AbstractProject<?, ?> project,
-				@QueryParameter String value) throws IOException {
-			if (0 == value.length()) {
-				return FormValidation.error("Empty recipe file.");
-			}
-			return FormValidation.ok();
-		}
+        return outputPrefixName;
+    }
 
-		public FormValidation doCheckAwsAccessKey(
-				@AncestorInPath AbstractProject<?, ?> project,
-				@QueryParameter String value) throws IOException {
-			if (0 == value.length()) {
-				return FormValidation.error("Empty aws access key");
-			}
-			return FormValidation.ok();
-		}
+    public String getDescription() {
 
-		public FormValidation doCheckAwsSecretKey(
-				@AncestorInPath AbstractProject<?, ?> project,
-				@QueryParameter String value) throws IOException {
-			if (0 == value.length()) {
-				return FormValidation.error("Empty aws secret key");
-			}
-			return FormValidation.ok();
-		}
-		
-		public ListBoxModel doFillAwsRegionItems() {
-            ListBoxModel items = new ListBoxModel();
-            for (Region region : Region.values()) {
-				items.add(region.readableName, region.name());
-			}
+        return description;
+    }
+
+    public String getCloudFormationRecipe() {
+
+        return cloudFormationRecipe;
+    }
+
+    public String getParameters() {
+
+        return parameters;
+    }
+
+    public long getTimeout() {
+
+        return timeout;
+    }
+
+    public String getAwsAccessKey() {
+
+        return awsAccessKey;
+    }
+
+    public String getAwsSecretKey() {
+
+        return awsSecretKey;
+    }
+
+    public long getSleep() {
+
+        return sleep;
+    }
+
+    public String getAwsRegion() {
+
+        return awsRegion;
+    }
+
+    public Region getParsedAwsRegion(final EnvVars env) {
+
+        final String regionName = getParsedValue(env, awsRegion);
+        return Region.getFromShortName(regionName);
+    }
+
+    public Map<String, String> getParsedParameters(final EnvVars env) {
+
+        if (parameters == null || parameters.isEmpty())
+            return new HashMap<String, String>();
+
+        final Map<String, String> result = new HashMap<String, String>();
+        String token[] = null;
+
+        // semicolon delimited list
+        if (parameters.contains(";")) {
+            for (final String param : parameters.split(";")) {
+                token = param.split("=");
+                result.put(token[0].trim(), env.expand(token[1].trim()));
+            }
+        } else {
+            // comma delimited parameter list
+            for (final String param : parameters.split(",")) {
+                token = param.split("=");
+                result.put(token[0].trim(), env.expand(token[1].trim()));
+            }
+        }
+        return result;
+    }
+
+    public String getParsedValue(final EnvVars env, final String value) {
+
+        return env.expand(value);
+    }
+
+    public String getParsedAwsAccessKey(final EnvVars env) {
+
+        return env.expand(getAwsAccessKey());
+    }
+
+    public String getParsedAwsSecretKey(final EnvVars env) {
+
+        return env.expand(getAwsSecretKey());
+    }
+
+    @Extension
+    public static final class DescriptorImpl extends Descriptor<PostBuildStackBean> {
+
+        @Override
+        public String getDisplayName() {
+
+            return "Cloud Formation";
+        }
+
+        public FormValidation doCheckStackName(@AncestorInPath final AbstractProject<?, ?> project, @QueryParameter final String value) throws IOException {
+
+            if (0 == value.length()) {
+                return FormValidation.error("Empty stack name");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckTimeout(@AncestorInPath final AbstractProject<?, ?> project, @QueryParameter final String value) throws IOException {
+
+            if (value.length() > 0) {
+                try {
+                    Long.parseLong(value);
+                } catch (final NumberFormatException e) {
+                    return FormValidation.error("Timeout value " + value + " is not a number.");
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckSleep(@AncestorInPath final AbstractProject<?, ?> project, @QueryParameter final String value) throws IOException {
+
+            if (value.length() > 0) {
+                try {
+                    Long.parseLong(value);
+                } catch (final NumberFormatException e) {
+                    return FormValidation.error("Timeout value " + value + " is not a number.");
+                }
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckCloudFormationRecipe(@AncestorInPath final AbstractProject<?, ?> project, @QueryParameter final String value)
+                throws IOException {
+
+            if (0 == value.length()) {
+                return FormValidation.error("Empty recipe file.");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckAwsAccessKey(@AncestorInPath final AbstractProject<?, ?> project, @QueryParameter final String value) throws IOException {
+
+            if (0 == value.length()) {
+                return FormValidation.error("Empty aws access key");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckAwsSecretKey(@AncestorInPath final AbstractProject<?, ?> project, @QueryParameter final String value) throws IOException {
+
+            if (0 == value.length()) {
+                return FormValidation.error("Empty aws secret key");
+            }
+            return FormValidation.ok();
+        }
+
+        public ListBoxModel doFillAwsRegionItems() {
+
+            final ListBoxModel items = new ListBoxModel();
+            for (final Region region : Region.values()) {
+                items.add(region.readableName, region.name());
+            }
             return items;
         }
 
-	}
-
+    }
 
 }

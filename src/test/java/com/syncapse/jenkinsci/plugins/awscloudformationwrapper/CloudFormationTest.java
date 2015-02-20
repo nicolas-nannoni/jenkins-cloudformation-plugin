@@ -6,11 +6,11 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import hudson.EnvVars;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import hudson.EnvVars;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,13 +31,14 @@ import com.amazonaws.services.cloudformation.model.StackStatus;
 public class CloudFormationTest {
 
 	private static final String TEST_STACK = "testStack";
+	private static final String TEST_STACK_PREFIX_OUTPUT = "stack_prefix";
 
 	private CloudFormation cf; // SUT
 
-	private String recipeBody = "recipe body";
-	private Map<String, String> parameters = new HashMap<String, String>();
-	private String awsAccessKey = "accessKey";
-	private String awsSecretKey = "secretKey";
+	private final String recipeBody = "recipe body";
+	private final Map<String, String> parameters = new HashMap<String, String>();
+	private final String awsAccessKey = "accessKey";
+	private final String awsSecretKey = "secretKey";
 
 	@Mock
 	private AmazonCloudFormation awsClient;
@@ -45,7 +46,7 @@ public class CloudFormationTest {
 	@Before
 	public void setup() throws Exception {
 
-		cf = new CloudFormation(System.out, TEST_STACK, recipeBody, parameters,
+		cf = new CloudFormation(System.out, TEST_STACK, TEST_STACK_PREFIX_OUTPUT, recipeBody, parameters,
 				-12345, awsAccessKey, awsSecretKey, true, new EnvVars(),false) {
 			@Override
 			protected AmazonCloudFormation getAWSClient() {
@@ -114,7 +115,7 @@ public class CloudFormationTest {
 		return describeStacksResultWithStatus(StackStatus.CREATE_FAILED);
 	}
 
-	private CreateStackResult createResultWithId(String stackId) {
+	private CreateStackResult createResultWithId(final String stackId) {
 		return new CreateStackResult().withStackId(stackId);
 	}
 
@@ -127,7 +128,7 @@ public class CloudFormationTest {
 	}
 
 	private DescribeStacksResult describeStacksResultWithStatus(
-			StackStatus status) {
+			final StackStatus status) {
 		return new DescribeStacksResult().withStacks(new Stack()
 				.withStackStatus(status.name()).withStackName(TEST_STACK));
 	}
